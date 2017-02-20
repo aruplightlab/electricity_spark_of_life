@@ -3,8 +3,13 @@
 // https://www.aliexpress.com/item/SK6812WWA-SK6812-IC-warm-white-cool-white-amber-chips-inside-led-addressable-strip-60leds-m-non/32404277416.html?spm=2114.13010608.0.0.kM2lxC
 // Connect the data wire to pin 3 and the ground to the Arduino ground (this is important!)
 // This is used for the ELECTRICITY sign for the exhibition at the WELLCOME Collection
+// Now including RFduino code for BLE connectivity
 // Dec 2016, Inessa Demidova
-// Feb 2017, Francesco Anselmo
+// Feb 2017, Francesco Anselmo francesco.anselmo@arup.com
+
+
+#include <SPI.h>
+#include <RFduinoBLE.h>
 
 #include "FastLED.h"
 
@@ -16,7 +21,6 @@
 
 // This is an array of leds.  One item for each led in your strip.
 CRGB leds[NUM_LEDS];
-
 
 
 // Configurations of the ELECTRICITY letters
@@ -97,12 +101,13 @@ int lettersValue[] = {
   11, // E
 };
 
-bool autoMode = true;
-int mode = 0;                   // lighting mode
-// 0 = cycle through letters
-// 1 = random flicker
-// 2 = sine wave all together
-// 3 = sine wave random
+bool autoMode = false;
+int mode = 4;                   // lighting mode
+// 0 = off
+// 1 = cycle through letters
+// 2 = random flicker
+// 3 = sine wave all together
+// 4 = sine wave random
 int ledValue[NUM_LEDS];         // state of each led
 int buttonPress;
 long randNumber;
@@ -111,8 +116,25 @@ unsigned long previousTime;
 int speedValue = 100;
 int wait = 500;
 
+int R = 0;
+int G = 0;
+int B = 0;
+
+
 void setup() {
-  // sanity check delay - allows reprogramming if accidently blowing power w/leds
+
+  // Enable serial debug.
+  Serial.begin(9600);
+  Serial.println("Electricity: the spark of life");
+  Serial.println("Serial rate set to 9600 baud");
+
+  // Check RFduino CPU temperature, and print to log
+  float CPU_temperature = RFduino_temperature(CELSIUS);
+  Serial.print("RFduino_temperature is: ");
+  Serial.print(CPU_temperature);
+  Serial.println(" deg C");
+
+    // sanity check delay - allows reprogramming if accidently blowing power w/leds
   delay(2000);
   FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
 
@@ -131,11 +153,36 @@ void setup() {
 
   Serial.print("Mode:");
   Serial.println(mode);
+
+
+  // this is the data we want to appear in the advertisement
+  // (the deviceName length plus the advertisement length must be <= 18 bytes
+  // RFduinoBLE.advertisementData = "whatever";
+  RFduinoBLE.advertisementInterval = 500;
+  Serial.println("RFduino BLE Advertising interval 500ms");
+  RFduinoBLE.deviceName = "Electricity";
+  Serial.println("RFduino BLE DeviceName: Electricity");
+  RFduinoBLE.txPowerLevel = -20;
+  Serial.println("RFduino BLE Tx Power Level: -20dBm");
+
+  // start the BLE stack
+  RFduinoBLE.begin();
+  Serial.println("RFduino BLE stack started");
+
 }
 
 void loop() {
+  
 
-  if (mode == 0) {
+  // switch to lower power mode
+  //  RFduino_ULPDelay(INFINITE);
+
+    if (mode == 0) {
+      for (int letter = 0; letter < NUM_LETTERS; letter = letter + 1) {
+        fill_gradient(leds, letters_start[letter], CHSV(0, 0, 0), letters_start[letter] + letters_length[letter], CHSV(0, 0, 0), SHORTEST_HUES);
+        FastLED.show();
+      }
+    } else if (mode == 1) {
     for (int letter = 0; letter < NUM_LETTERS; letter = letter + 1) {
       fill_gradient(leds, letters_start[letter], CHSV(100, 255, 255), letters_start[letter] + letters_length[letter], CHSV(0, 255, 0), SHORTEST_HUES);
       FastLED.show();
@@ -153,7 +200,7 @@ void loop() {
       }
     }
   }
-  else if (mode == 1)
+  else if (mode == 2)
   {
     for (int i = 0; i <= (NUM_LETTERS - 1); i++) {           // for each led:
       //              DmxSimple.write(i + 1, ledValue[i]);   // set the pwm value of that pin determined previously
@@ -171,7 +218,7 @@ void loop() {
     //    delay(wait);    // the delay between changes
     //    testButton();
   }
-  else if (mode == 2)
+  else if (mode == 3)
   {
     float in, out;
     for (in = 0; in < 6.283; in = in + 0.0001 * speedValue)
@@ -186,7 +233,7 @@ void loop() {
       //          testButton();
     }
   }
-  else if (mode == 3)
+  else if (mode == 4)
   {
     float in, out;
     for (in = 0; in < 6.283; in = in + 1)
@@ -219,37 +266,88 @@ void loop() {
       Serial.println(mode);
     }
   }
-
+  
 }
 
 void nextMode()
 {
   // add one to the current pattern number, and wrap around at the end
-  mode = (mode + 1) % 4;
+  mode = (mode + 1) % 5;
 }
 
-//void testButton ()
-//{
-//  if ((millis() - previousTime) > interval) {
-//    buttonPress = digitalRead(8); //read button state
-//    speedValue = analogRead(1); // read potentiometer
-//    Serial.print(mode);
-//    Serial.print(" ");
-//    Serial.print(speedValue * .000001);
-//    Serial.print(" ");
-//    Serial.print(speedValue * .00001);
-//    Serial.print(" ");
-//    Serial.println(speedValue);
-//    if (buttonPress == HIGH) {
-//      //    delay(500);
-//      mode ++;
-//      //Reset count if over max mode number
-//      if (mode == 4)
-//      {
-//        mode = 1;
-//      }
-//    }
-//    previousTime = millis();
-//  }
+void RFduinoBLE_onAdvertisement()
+{
+  Serial.println("RFduino is doing BLE advertising ...");
+  // turn off
+  fill_gradient(leds, 0, CHSV(100, 255, 0), NUM_LEDS, CHSV(0, 255, 0), SHORTEST_HUES);
+  FastLED.show();
+}
+
+void RFduinoBLE_onConnect()
+{
+  Serial.println("RFduino BLE connection successful");
+  fill_gradient(leds, 0, CHSV(0, 255, 100), NUM_LEDS, CHSV(0, 255, 100), SHORTEST_HUES);
+  FastLED.show();
+  delay(500);
+  fill_gradient(leds, 0, CHSV(100, 255, 100), NUM_LEDS, CHSV(100, 255, 100), SHORTEST_HUES);
+  FastLED.show();
+  delay(500);
+  fill_gradient(leds, 0, CHSV(255, 255, 100), NUM_LEDS, CHSV(255, 255, 100), SHORTEST_HUES);
+  FastLED.show();
+  delay(500);
+  fill_gradient(leds, 0, CHSV(0, 0, 100), NUM_LEDS, CHSV(0, 0, 100), SHORTEST_HUES);
+  FastLED.show();
+  delay(500);
+}
+
+void RFduinoBLE_onDisconnect()
+{
+  Serial.println("RFduino BLE disconnected");
+}
+
+void RFduinoBLE_onReceive(char *data, int len)
+{
+  // if the first byte is 0x01 / on / true
+  Serial.println("Received data over BLE");
+  Serial.println(len);
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  if (len==3) {
+    uint8_t r = data[0];
+    uint8_t g = data[1];
+    uint8_t b = data[2];
+    Serial.println(r);
+    Serial.println(g);
+    Serial.println(b);
+    fill_gradient(leds, 0, CHSV(r, g, b), NUM_LEDS, CHSV(r, g, b), SHORTEST_HUES);
+    FastLED.show();
+    Serial.println("Turn light on");
+  } else if (len==1) {
+    uint8_t myByte = data[0]; // store first char in array to myByte 
+    Serial.println(myByte); // print myByte via serial
+    mode = myByte;
+    if (myByte==0) {
+//      fill_gradient(leds, 0, CHSV(0, 0, 0), NUM_LEDS, CHSV(0, 0, 0), SHORTEST_HUES);
+//      FastLED.show();
+      Serial.println("Turn light off");  
+    }
+  }
+
+  /*
+  if (data[0])
+  {
+    colorWipe( lampan.Color(255, 255, 255), 50 );
+    Serial.println("Turn light on");
+  }
+  else
+  {
+    colorWipe( lampan.Color(0, 0, 0), 50 );
+    Serial.println("Turn light off");
+  }
+  */
+}
+
+
 
 
