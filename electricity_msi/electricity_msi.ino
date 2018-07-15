@@ -21,7 +21,7 @@ FASTLED_USING_NAMESPACE
 #define DATA_PIN    4
 //#define CLK_PIN   4
 #define LED_TYPE    WS2812
-#define COLOR_ORDER BRG
+#define COLOR_ORDER GRB
 #define DELAY 20
 CRGB leds[NUM_LEDS];
 CRGBPalette16 palette = PartyColors_p;
