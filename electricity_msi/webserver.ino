@@ -2,7 +2,7 @@ void handleRoot() {
     digitalWrite ( led, 1 );
     String out = "<html><head><title>Electricity - Aurora</title></head>";
     out += "<body style='background-color:gray'><center>";
-    out += "<span style='display:block; width:100%; font-size:2em; font-family:Verdana; text-align:center'>AIML LED rings lighting</span><br/>";
+    out += "<span style='display:block; width:100%; font-size:2em; font-family:Verdana; text-align:center'>Electricity - Aurora</span><br/>";
     out += "<a href='brighten'><span style='display:block; background-color:white; width:100%; height:3em;'>Brighter</span></a><br/>";
     out += "<a href='dim'><span style='display:block; background-color:black; foreground-color:white; width:100%; height:3em;'>Dimmer</span></a><br/>";
     out += "<a href='white'><span style='display:block; background-color:white; width:100%; height:3em;'></span></a><br/>";
@@ -13,7 +13,7 @@ void handleRoot() {
     out += "<a href='pink'><span style='display:block; background-color:pink; width:100%; height:3em;'></span></a><br/>";
     out += "<a href='blue'><span style='display:block; background-color:blue; width:100%; height:3em;'></span></a><br/>";
     out += "<a href='black'><span style='display:block; background-color:black; width:100%; height:3em;'></span></a><br/>";
-    out += "<a href='aiml'><span style='display:block; background-color:white; width:100%; height:3em;'>AIML Gradient</span></a><br/>";
+    out += "<a href='aiml'><span style='display:block; background-color:white; width:100%; height:3em;'>Aurora Gradient</span></a><br/>";
     out += "<a href='sinelon'><span style='display:block; background-color:white; width:100%; height:3em;'>Transition: sinelon</span></a><br/>";
     out += "<a href='bpm'><span style='display:block; background-color:white; width:100%; height:3em;'>Transition: bpm</span></a><br/>";
     out += "<a href='random'><span style='display:block; background-color:white; width:100%; height:3em;'>Transition: random</span></a><br/>";
