@@ -23,21 +23,23 @@ FASTLED_USING_NAMESPACE
 #define LED_TYPE    WS2812
 #define COLOR_ORDER GRB
 #define DELAY 20
+
 CRGB leds[NUM_LEDS];
 CRGBPalette16 palette = PartyColors_p;
 
 int transition = 1;
 int brightness = 150;
+uint8_t idx = 0; // rotating index
 
 #define FRAMES_PER_SECOND  120
 
 const byte DNS_PORT = 53;
 IPAddress apIP(192, 168, 1, 1);
 DNSServer dnsServer;
+
 ESP8266WebServer webServer(80);
 
 const int led = 13;
-uint8_t idx = 0; // rotating index
 
 //String responseHTML = ""
 //  "<!DOCTYPE html><html><head><title>CaptivePortal</title></head><body>"
@@ -96,8 +98,7 @@ void setup() {
     webServer.begin();
     Serial.println ( "HTTP server started" );
 
-    
-    webServer.begin();
+//    webServer.begin();
 }
 
 void loop() {
@@ -116,7 +117,9 @@ void loop() {
     FastLED.show();  
     // insert a delay to keep the framerate modest
     FastLED.delay(1000/FRAMES_PER_SECOND); 
+
     // do some periodic updates
     EVERY_N_MILLISECONDS( 20 ) { idx++; } // slowly cycle the index variable
     //EVERY_N_MILLISECONDS(5000) { Serial.println(millis()); }
+    
 }
